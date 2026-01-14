@@ -1,0 +1,289 @@
+# =============================================================================
+# Department Configuration - CLAIMS
+# =============================================================================
+#
+# This file defines the department-specific settings for the CLAIMS department.
+# It includes:
+#   - CSV parsing settings (for the department's specific CSV format)
+#   - Static field values (fields that are always the same for this department)
+#   - Dynamic field mappings (how to map CSV columns to XML fields)
+#   - Transformation rules (how to transform field values)
+#
+# USAGE:
+#   Place this file in: department_mappings/claims/department_config.yaml
+#   The department code "claims" is derived from the folder name.
+#
+# CUSTOMIZATION:
+#   - Update static_fields with your department's constant values
+#   - Update field_mappings to match your CSV column headers
+#   - Add transformation_rules for any field value transformations
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# DEPARTMENT IDENTIFICATION
+# -----------------------------------------------------------------------------
+
+department:
+  # Unique code for this department (used in file naming, logging, etc.).
+  code: "CLAIMS"
+  
+  # Human-readable name for this department.
+  name: "Claims Department"
+  
+  # Description of the department's function.
+  description: "Handles all claims-related financial transactions"
+  
+  # Contact email for this department (for error notifications).
+  contact_email: "claims-finance@example.com"
+
+# -----------------------------------------------------------------------------
+# CSV SETTINGS
+# -----------------------------------------------------------------------------
+# These settings define how to parse the CSV files from this department.
+
+csv_settings:
+  # Delimiter used in the CSV file.
+  # Common values: "," (comma), "|" (pipe), "\t" (tab), ";" (semicolon)
+  delimiter: ","
+  
+  # Quote character used for quoted fields.
+  quote_char: "\""
+  
+  # Number of header rows in the CSV file.
+  # If your CSV has multi-line headers, set this to the number of header rows.
+  header_rows: 1
+  
+  # Row number where data starts (1-indexed).
+  # For a standard CSV with one header row, this would be 2.
+  # For CSVs with multi-line headers or metadata rows, adjust accordingly.
+  #
+  # QUESTION FOR USER:
+  #   You mentioned some CSVs have multi-line headers and data starting on row 8+.
+  #   Please specify the data_start_row for each department.
+  data_start_row: 2
+  
+  # File encoding.
+  # Common values: "UTF-8", "ISO-8859-1", "Windows-1252"
+  encoding: "UTF-8"
+  
+  # Skip empty rows during parsing.
+  skip_empty_rows: true
+
+# -----------------------------------------------------------------------------
+# TRANSACTION TYPE
+# -----------------------------------------------------------------------------
+# Specify which transaction type this department uses.
+
+transaction_type: "payments"
+
+# -----------------------------------------------------------------------------
+# TRANSACTION GROUPING
+# -----------------------------------------------------------------------------
+# Define how rows are grouped into transactions.
+
+grouping:
+  # The field used to group rows into transactions.
+  # All rows with the same value in this field belong to the same transaction.
+  #
+  # QUESTION FOR USER:
+  #   What field in your CSV determines which rows belong to the same transaction?
+  #   Examples: "CheckNumber", "BatchID", "TransactionID"
+  group_by_field: "CheckNumber"
+  
+  # Sort order for line items within a transaction.
+  # Specify the field to sort by and the direction (asc/desc).
+  sort_by_field: "LineNumber"
+  sort_direction: "asc"
+
+# -----------------------------------------------------------------------------
+# STATIC FIELDS
+# -----------------------------------------------------------------------------
+# These fields have constant values for all transactions from this department.
+# They are NOT read from the CSV but are inserted directly into the XML.
+
+static_fields:
+  # Each static field specifies:
+  #   - xml_tag: The XML element name
+  #   - value: The constant value
+  #   - parent_tag: The parent element (cashbook, transaction, or lineItem)
+  
+  - xml_tag: "DepartmentCode"
+    value: "CLAIMS"
+    parent_tag: "transaction"
+  
+  - xml_tag: "SourceSystem"
+    value: "LEGACY_CLAIMS_SYSTEM"
+    parent_tag: "transaction"
+  
+  - xml_tag: "Currency"
+    value: "USD"
+    parent_tag: "transaction"
+  
+  # CUSTOMIZATION:
+  #   Add more static fields as needed for your department.
+  #   Example:
+  #   - xml_tag: "CostCenter"
+  #     value: "CC-12345"
+  #     parent_tag: "lineItem"
+
+# -----------------------------------------------------------------------------
+# FIELD MAPPINGS
+# -----------------------------------------------------------------------------
+# Define how CSV columns map to XML fields.
+# For dynamic fields, specify the CSV column header.
+# The XML tag name comes from the template.
+
+field_mappings:
+  # Each mapping specifies:
+  #   - csv_header: The column header in the CSV file (from the OLD system)
+  #   - is_dynamic: true if the value comes from the CSV, false if static
+  #   - static_value: The value to use if is_dynamic is false
+  
+  # EXAMPLE MAPPINGS:
+  # These are placeholders - update with your actual CSV column headers.
+  
+  - csv_header: "CHECK_NUM"
+    is_dynamic: true
+    
+  - csv_header: "CHECK_AMT"
+    is_dynamic: true
+    
+  - csv_header: "POLICY_NO"
+    is_dynamic: true
+    
+  - csv_header: "INVOICE_NO"
+    is_dynamic: true
+    
+  - csv_header: "PAYEE_NAME"
+    is_dynamic: true
+    
+  - csv_header: "PAYMENT_DATE"
+    is_dynamic: true
+    
+  # Example of a field that uses a static value instead of CSV data:
+  - csv_header: "PAYMENT_TYPE"
+    is_dynamic: false
+    static_value: "CHECK"
+
+# -----------------------------------------------------------------------------
+# TRANSFORMATION RULES
+# -----------------------------------------------------------------------------
+# Define how to transform field values from the CSV format to the XML format.
+# Each rule specifies the field and a sequence of transformation actions.
+
+transformation_rules:
+  # POLICY NUMBER TRANSFORMATION
+  # -----------------------------
+  # This is a common use case: policy numbers in the CSV are numeric only,
+  # but the XML requires them to be formatted with a prefix and padding.
+  #
+  # EXAMPLE:
+  #   CSV value: "123456"
+  #   Required XML value: "A000123456" (prepend "A", pad to 10 digits)
+  
+  - field: "POLICY_NO"
+    actions:
+      # Step 1: Remove any existing non-numeric characters.
+      - type: "extract_digits"
+      
+      # Step 2: Pad with leading zeros to 9 digits.
+      - type: "pad_zeros_to_length"
+        value: "9"
+      
+      # Step 3: Prepend the department prefix.
+      - type: "prepend_string"
+        value: "A"
+  
+  # CHECK AMOUNT TRANSFORMATION
+  # ---------------------------
+  # Ensure the amount has exactly 2 decimal places.
+  
+  - field: "CHECK_AMT"
+    actions:
+      - type: "format_number"
+        value: "2"
+  
+  # DATE TRANSFORMATION
+  # -------------------
+  # Convert from MM/DD/YYYY to YYYY-MM-DD format.
+  
+  - field: "PAYMENT_DATE"
+    actions:
+      - type: "format_date"
+        value: "01/02/2006|2006-01-02"
+  
+  # PAYEE NAME TRANSFORMATION
+  # -------------------------
+  # Clean up the payee name: trim whitespace and convert to uppercase.
+  
+  - field: "PAYEE_NAME"
+    actions:
+      - type: "trim"
+      - type: "uppercase"
+
+# -----------------------------------------------------------------------------
+# CONDITIONAL TRANSFORMATIONS
+# -----------------------------------------------------------------------------
+# Define transformations that only apply under certain conditions.
+
+conditional_transformations:
+  # EXAMPLE: Different policy number format based on policy type.
+  #
+  # PSEUDOCODE:
+  # - condition: "POLICY_TYPE == 'AUTO'"
+  #   field: "POLICY_NO"
+  #   actions:
+  #     - type: "prepend_string"
+  #       value: "AU"
+  #
+  # - condition: "POLICY_TYPE == 'HOME'"
+  #   field: "POLICY_NO"
+  #   actions:
+  #     - type: "prepend_string"
+  #       value: "HO"
+  
+  # CUSTOMIZATION:
+  #   Add your conditional transformation rules here.
+  []
+
+# -----------------------------------------------------------------------------
+# LOOKUP TABLES
+# -----------------------------------------------------------------------------
+# Define lookup tables for code-to-value translations.
+
+lookup_tables:
+  # EXAMPLE: Payment method codes to descriptions.
+  payment_methods:
+    "CHK": "Check"
+    "ACH": "ACH Transfer"
+    "WIR": "Wire Transfer"
+    "EFT": "Electronic Funds Transfer"
+  
+  # EXAMPLE: Status codes.
+  status_codes:
+    "A": "Active"
+    "P": "Pending"
+    "C": "Completed"
+    "V": "Void"
+  
+  # CUSTOMIZATION:
+  #   Add your lookup tables here.
+
+# -----------------------------------------------------------------------------
+# VALIDATION OVERRIDES
+# -----------------------------------------------------------------------------
+# Override default validation settings for this department.
+
+validation_overrides:
+  # Skip validation for specific fields.
+  skip_fields: []
+  
+  # Treat specific fields as required (even if optional in template).
+  force_required: []
+  
+  # Treat specific fields as optional (even if required in template).
+  force_optional: []
+  
+  # Custom validation rules.
+  custom_rules: []

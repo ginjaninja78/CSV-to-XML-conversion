@@ -1,0 +1,229 @@
+# =============================================================================
+# CSV to XML Converter - Application Configuration
+# =============================================================================
+#
+# This is the main application configuration file. It defines global settings
+# that apply to all conversion operations.
+#
+# CUSTOMIZATION:
+#   - Modify paths to match your directory structure
+#   - Adjust logging settings as needed
+#   - Configure default behaviors
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# DIRECTORY CONFIGURATION
+# -----------------------------------------------------------------------------
+# These directories are relative to the application root directory.
+# You can also use absolute paths if needed.
+
+directories:
+  # Where input CSV files are placed for processing.
+  input: "input"
+  
+  # Where output XML files are generated.
+  output: "output"
+  
+  # Where processed input files are archived.
+  input_archive: "input_archive"
+  
+  # Where output files are archived for long-term storage.
+  output_archive: "output_archive"
+  
+  # Where XLSX template files are stored.
+  # The converter will scan this directory for template files.
+  templates: "templates"
+  
+  # Where department-specific mapping files are stored.
+  # Each department has its own subdirectory.
+  department_mappings: "department_mappings"
+
+# -----------------------------------------------------------------------------
+# LOGGING CONFIGURATION
+# -----------------------------------------------------------------------------
+
+logging:
+  # Log level: debug, info, warn, error
+  level: "info"
+  
+  # Write logs to file (in addition to console).
+  file_enabled: true
+  
+  # Log file path (relative to application root).
+  file_path: "logs/converter.log"
+  
+  # Maximum log file size in MB before rotation.
+  max_size_mb: 10
+  
+  # Number of old log files to keep.
+  max_backups: 5
+
+# -----------------------------------------------------------------------------
+# PROCESSING CONFIGURATION
+# -----------------------------------------------------------------------------
+
+processing:
+  # Maximum number of files to process in a single run.
+  # Set to 0 for unlimited.
+  max_files: 0
+  
+  # Enable concurrent processing of multiple files.
+  # CAUTION: Enable only if your system has sufficient resources.
+  concurrent: false
+  
+  # Maximum number of concurrent workers (if concurrent is enabled).
+  max_workers: 4
+  
+  # Stop processing on first error.
+  stop_on_error: false
+  
+  # Archive files after successful processing.
+  archive_on_success: true
+  
+  # Use timestamp-based subdirectories in archives.
+  # Example: input_archive/2024/01/15/file.csv
+  use_timestamp_subdirs: false
+
+# -----------------------------------------------------------------------------
+# VALIDATION CONFIGURATION
+# -----------------------------------------------------------------------------
+
+validation:
+  # Treat validation warnings as errors.
+  strict_mode: false
+  
+  # Skip validation of optional fields.
+  skip_optional: false
+  
+  # Generate detailed validation report.
+  generate_report: true
+
+# -----------------------------------------------------------------------------
+# OUTPUT CONFIGURATION
+# -----------------------------------------------------------------------------
+
+output:
+  # Output file naming format.
+  # Available placeholders:
+  #   {uuid}      - Random UUID
+  #   {timestamp} - Current timestamp (YYYYMMDD_HHMMSS)
+  #   {date}      - Current date (YYYYMMDD)
+  #   {time}      - Current time (HHMMSS)
+  #   {dept}      - Department code
+  #   {type}      - Transaction type
+  #   {original}  - Original input file name (without extension)
+  #
+  # QUESTION FOR USER:
+  #   What is your preferred UUID format for output files?
+  #   Please provide the exact format you need.
+  file_name_format: "{dept}_{type}_{timestamp}_{uuid}.xml"
+  
+  # Include XML declaration in output.
+  include_xml_declaration: true
+  
+  # XML version for declaration.
+  xml_version: "1.0"
+  
+  # XML encoding for declaration.
+  xml_encoding: "UTF-8"
+  
+  # Indentation string for XML output.
+  indent: "  "
+
+# -----------------------------------------------------------------------------
+# TEMPLATE CONFIGURATION
+# -----------------------------------------------------------------------------
+
+templates:
+  # File extension for template files.
+  file_extension: ".xlsx"
+  
+  # Auto-reload templates when they change.
+  # Useful during development, disable in production.
+  auto_reload: false
+  
+  # Column positions in the template XLSX files.
+  # These define which columns contain which information.
+  #
+  # CUSTOMIZATION:
+  #   Update these values to match your actual template structure.
+  #   Column numbers are 1-indexed (A=1, B=2, etc.).
+  column_positions:
+    # Column containing the old system header names.
+    old_header: 1
+    
+    # Column containing the corresponding XML tag names.
+    xml_tag: 2
+    
+    # Column containing the data type (numeric, alphanumeric, date, etc.).
+    data_type: 3
+    
+    # Column containing the maximum character length.
+    max_length: 4
+    
+    # Column containing required/optional/conditional status.
+    required_type: 5
+    
+    # Column containing conditional rule (if required_type is "conditional").
+    conditional_rule: 6
+    
+    # Column containing the parent element (cashbook, transaction, lineItem).
+    parent_element: 7
+    
+    # Column containing the field order within its parent.
+    field_order: 8
+    
+    # Column containing any additional notes or comments.
+    notes: 9
+
+# -----------------------------------------------------------------------------
+# TRANSACTION TYPE CONFIGURATION
+# -----------------------------------------------------------------------------
+# Define the four transaction types and their corresponding template files.
+
+transaction_types:
+  - name: "payments"
+    description: "Outgoing payments"
+    template_file: "payments_template.xlsx"
+    # XML element names for this transaction type.
+    xml_root_element: "cashbook"
+    xml_transaction_element: "payment"
+    xml_line_item_element: "lineItem"
+    
+  - name: "receipts"
+    description: "Incoming receipts"
+    template_file: "receipts_template.xlsx"
+    xml_root_element: "cashbook"
+    xml_transaction_element: "receipt"
+    xml_line_item_element: "lineItem"
+    
+  - name: "clt"
+    description: "Cash Ledger Transactions (internal money movement)"
+    template_file: "clt_template.xlsx"
+    xml_root_element: "cashbook"
+    xml_transaction_element: "cashLedgerTransaction"
+    xml_line_item_element: "lineItem"
+    
+  - name: "ach_eft_wire"
+    description: "ACH, EFT, and Wire transfers"
+    template_file: "ach_eft_wire_template.xlsx"
+    xml_root_element: "cashbook"
+    xml_transaction_element: "electronicTransfer"
+    xml_line_item_element: "lineItem"
+
+# -----------------------------------------------------------------------------
+# ERROR HANDLING CONFIGURATION
+# -----------------------------------------------------------------------------
+
+error_handling:
+  # Generate error log file for failed conversions.
+  generate_error_log: true
+  
+  # Generate processing summary after each run.
+  generate_summary: true
+  
+  # Send email notification on errors.
+  # CUSTOMIZATION: Configure your email settings.
+  email_notification: false
+  email_recipients: []
