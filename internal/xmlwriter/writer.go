@@ -48,9 +48,25 @@ import (
 	"strings"
 
 	"github.com/ginjaninja78/CSV-to-XML-conversion/internal/config"
-	"github.com/ginjaninja78/CSV-to-XML-conversion/internal/converter"
 	"github.com/ginjaninja78/CSV-to-XML-conversion/internal/xlsxparser"
 )
+
+// =============================================================================
+// LOCAL TYPE DEFINITIONS (to avoid import cycles)
+// =============================================================================
+
+// Transaction represents a single transaction in the XML output.
+type Transaction struct {
+	ID        int
+	GroupKey  string
+	LineItems []LineItem
+}
+
+// LineItem represents a single line item within a transaction.
+type LineItem struct {
+	ID     int
+	Fields map[string]string
+}
 
 // =============================================================================
 // XML GENERATION OPTIONS
@@ -132,12 +148,12 @@ func DefaultGenerateOptions() GenerateOptions {
 //         i. Create the line item element with global index attribute
 //         ii. Add line item-level fields
 //   4. Marshal the XML with proper indentation
-func Generate(transactions []converter.Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig) ([]byte, error) {
+func Generate(transactions []Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig) ([]byte, error) {
 	return GenerateWithOptions(transactions, schema, deptConfig, DefaultGenerateOptions())
 }
 
 // GenerateWithOptions creates an XML document with custom options.
-func GenerateWithOptions(transactions []converter.Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions) ([]byte, error) {
+func GenerateWithOptions(transactions []Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions) ([]byte, error) {
 	var buffer bytes.Buffer
 
 	// Write XML declaration if requested.
@@ -180,7 +196,7 @@ type XMLElement struct {
 }
 
 // buildDocument constructs the XML document structure.
-func buildDocument(transactions []converter.Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions) *XMLDocument {
+func buildDocument(transactions []Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions) *XMLDocument {
 	doc := &XMLDocument{
 		XMLName: xml.Name{Local: schema.XMLRootElement},
 	}
@@ -239,7 +255,7 @@ func buildDocument(transactions []converter.Transaction, schema *xlsxparser.Sche
 //     <lineItem n="1">...</lineItem>
 //     <lineItem n="2">...</lineItem>
 //   </transaction>
-func buildTransactionElement(transaction converter.Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions, globalLineItemIndex *int) XMLElement {
+func buildTransactionElement(transaction Transaction, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions, globalLineItemIndex *int) XMLElement {
 	element := XMLElement{
 		XMLName: xml.Name{Local: schema.XMLTransactionElement},
 		Attributes: []xml.Attr{
@@ -317,7 +333,7 @@ func buildTransactionElement(transaction converter.Transaction, schema *xlsxpars
 //     <PolicyNumber>A000123456</PolicyNumber>
 //     <InvoiceNumber>INV-001</InvoiceNumber>
 //   </lineItem>
-func buildLineItemElement(lineItem converter.LineItem, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions, globalLineItemIndex *int) XMLElement {
+func buildLineItemElement(lineItem LineItem, schema *xlsxparser.Schema, deptConfig *config.DepartmentConfig, options GenerateOptions, globalLineItemIndex *int) XMLElement {
 	// Determine the index to use.
 	index := lineItem.ID
 	if options.LineItemNumberingGlobal {

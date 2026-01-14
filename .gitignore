@@ -1,0 +1,47 @@
+# Compiled binaries
+csv2xml
+csv2xml.exe
+csv2xml-linux
+csv2xml-darwin
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+logs/*.log
+*.log
+
+# Input/Output files (actual data, not structure)
+input/*.csv
+output/*.xml
+input_archive/*.csv
+output_archive/*.xml
+
+# Temporary files
+*.tmp
+*.temp

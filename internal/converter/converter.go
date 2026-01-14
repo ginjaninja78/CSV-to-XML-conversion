@@ -246,7 +246,9 @@ func (c *Converter) Run() Result {
 	//   - Required field checks
 	//   - Conditional validation rules
 
-	validationErrors := validation.Validate(transactions, c.schema)
+	// Convert transactions to validation types.
+	validationTransactions := convertToValidationTransactions(transactions)
+	validationErrors := validation.Validate(validationTransactions, c.schema)
 	result.Stats.ValidationErrors = len(validationErrors)
 
 	if len(validationErrors) > 0 {
@@ -269,7 +271,9 @@ func (c *Converter) Run() Result {
 	// =========================================================================
 	// Generate the XML document based on the schema and transformed data.
 
-	xmlDoc, err := xmlwriter.Generate(transactions, c.schema, c.deptConfig)
+	// Convert transactions to xmlwriter types.
+	xmlTransactions := convertToXMLWriterTransactions(transactions)
+	xmlDoc, err := xmlwriter.Generate(xmlTransactions, c.schema, c.deptConfig)
 	if err != nil {
 		result.Error = fmt.Errorf("failed to generate XML: %w", err)
 		return result
@@ -747,6 +751,50 @@ func trimSpace(s string) string {
 func replaceString(s, old, new string) string {
 	// IMPLEMENTATION: Use strings.ReplaceAll.
 	return s // Placeholder
+}
+
+// =============================================================================
+// TYPE CONVERSION FUNCTIONS
+// =============================================================================
+
+// convertToValidationTransactions converts internal Transaction types to validation.Transaction types.
+func convertToValidationTransactions(transactions []Transaction) []validation.Transaction {
+	result := make([]validation.Transaction, len(transactions))
+	for i, t := range transactions {
+		lineItems := make([]validation.LineItem, len(t.LineItems))
+		for j, li := range t.LineItems {
+			lineItems[j] = validation.LineItem{
+				ID:     li.ID,
+				Fields: li.Fields,
+			}
+		}
+		result[i] = validation.Transaction{
+			ID:        t.ID,
+			GroupKey:  t.GroupKey,
+			LineItems: lineItems,
+		}
+	}
+	return result
+}
+
+// convertToXMLWriterTransactions converts internal Transaction types to xmlwriter.Transaction types.
+func convertToXMLWriterTransactions(transactions []Transaction) []xmlwriter.Transaction {
+	result := make([]xmlwriter.Transaction, len(transactions))
+	for i, t := range transactions {
+		lineItems := make([]xmlwriter.LineItem, len(t.LineItems))
+		for j, li := range t.LineItems {
+			lineItems[j] = xmlwriter.LineItem{
+				ID:     li.ID,
+				Fields: li.Fields,
+			}
+		}
+		result[i] = xmlwriter.Transaction{
+			ID:        t.ID,
+			GroupKey:  t.GroupKey,
+			LineItems: lineItems,
+		}
+	}
+	return result
 }
 
 // =============================================================================

@@ -41,9 +41,25 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/ginjaninja78/CSV-to-XML-conversion/internal/converter"
 	"github.com/ginjaninja78/CSV-to-XML-conversion/internal/xlsxparser"
 )
+
+// =============================================================================
+// LOCAL TYPE DEFINITIONS (to avoid import cycles)
+// =============================================================================
+
+// Transaction represents a single transaction in the XML output.
+type Transaction struct {
+	ID        int
+	GroupKey  string
+	LineItems []LineItem
+}
+
+// LineItem represents a single line item within a transaction.
+type LineItem struct {
+	ID     int
+	Fields map[string]string
+}
 
 // =============================================================================
 // VALIDATION ERROR TYPES
@@ -152,8 +168,8 @@ type CustomValidatorFunc func(value string, context ValidationContext) string
 type ValidationContext struct {
 	FieldName     string
 	FieldMapping  *xlsxparser.FieldMapping
-	Transaction   *converter.Transaction
-	LineItem      *converter.LineItem
+	Transaction   *Transaction
+	LineItem      *LineItem
 	AllFields     map[string]string
 }
 
@@ -196,14 +212,14 @@ func NewValidatorWithOptions(schema *xlsxparser.Schema, options ValidationOption
 //
 // RETURNS:
 //   - A slice of ValidationError pointers.
-func Validate(transactions []converter.Transaction, schema *xlsxparser.Schema) []*ValidationError {
+func Validate(transactions []Transaction, schema *xlsxparser.Schema) []*ValidationError {
 	validator := NewValidator(schema)
 	result := validator.ValidateAll(transactions)
 	return result.Errors
 }
 
 // ValidateAll validates all transactions and returns a detailed result.
-func (v *Validator) ValidateAll(transactions []converter.Transaction) *ValidationResult {
+func (v *Validator) ValidateAll(transactions []Transaction) *ValidationResult {
 	result := &ValidationResult{
 		IsValid:               true,
 		Errors:                make([]*ValidationError, 0),
@@ -237,7 +253,7 @@ func (v *Validator) ValidateAll(transactions []converter.Transaction) *Validatio
 }
 
 // ValidateTransaction validates a single transaction.
-func (v *Validator) ValidateTransaction(transaction *converter.Transaction) []*ValidationError {
+func (v *Validator) ValidateTransaction(transaction *Transaction) []*ValidationError {
 	var errors []*ValidationError
 
 	// Validate each line item.
@@ -257,7 +273,7 @@ func (v *Validator) ValidateTransaction(transaction *converter.Transaction) []*V
 }
 
 // ValidateLineItem validates a single line item.
-func (v *Validator) ValidateLineItem(transaction *converter.Transaction, lineItem *converter.LineItem) []*ValidationError {
+func (v *Validator) ValidateLineItem(transaction *Transaction, lineItem *LineItem) []*ValidationError {
 	var errors []*ValidationError
 
 	// Validate each field in the line item.
@@ -305,7 +321,7 @@ func (v *Validator) ValidateLineItem(transaction *converter.Transaction, lineIte
 }
 
 // ValidateField validates a single field value against its schema definition.
-func (v *Validator) ValidateField(value string, mapping *xlsxparser.FieldMapping, transaction *converter.Transaction, lineItem *converter.LineItem) []*ValidationError {
+func (v *Validator) ValidateField(value string, mapping *xlsxparser.FieldMapping, transaction *Transaction, lineItem *LineItem) []*ValidationError {
 	var errors []*ValidationError
 
 	// =========================================================================
